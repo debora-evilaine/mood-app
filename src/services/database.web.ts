@@ -1,5 +1,3 @@
-// Lightweight web fallback for the database using localStorage.
-// This is intended for development/testing in the browser only.
 
 export interface CreateMoodEntryPayloadWeb {
   date?: string;
@@ -66,7 +64,7 @@ export class WebDatabaseService {
       intensity: payload.intensity ?? null,
     };
     this.db!.entries.unshift(entry);
-    // ensure tags exist
+    
     for (const t of entry.tags) if (!this.db!.tags.includes(t)) this.db!.tags.push(t);
     save(this.db!);
     return entry;
@@ -104,7 +102,7 @@ export class WebDatabaseService {
     if (patch.humores !== undefined) item.humores = patch.humores;
     if (patch.mood !== undefined) item.humores = [patch.mood];
     if (patch.tags !== undefined) item.tags = patch.tags;
-    // ensure tags exist
+    
     for (const t of item.tags) if (!this.db!.tags.includes(t)) this.db!.tags.push(t);
     this.db!.entries[idx] = item;
     save(this.db!);
@@ -131,7 +129,7 @@ export class WebDatabaseService {
   }
 
   async close() {
-    // noop for web fallback
+    
     this.db = null;
   }
 }

@@ -402,6 +402,6 @@ class DatabaseService {
 }
 
 
-// Export a platform-appropriate implementation (native SQLite or web fallback).
+
 export const databaseService: IDatabaseService =
   Platform.OS === 'web' ? (new (WebDatabaseService as any)() as IDatabaseService) : (new DatabaseService() as IDatabaseService);
