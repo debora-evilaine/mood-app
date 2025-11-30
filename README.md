@@ -6,7 +6,7 @@
 
 -----
 
-## 🚀 1. Primeiros Passos
+##  1. Primeiros Passos
 
 Este é um projeto [Expo](https://expo.dev) que utiliza o [Expo Router](https://docs.expo.dev/router/introduction) para roteamento baseado em arquivos.
 
@@ -34,7 +34,7 @@ Na saída do terminal, você encontrará opções para abrir o aplicativo em emu
 
 -----
 
-## 🛠️ 2. Configuração do Banco de Dados (SQLite Web)
+##  2. Configuração do Banco de Dados (SQLite Web)
 
 O projeto utiliza **SQLite** (via `expo-sqlite`) para persistência local de dados. Para que ele funcione no ambiente **Web** (navegador), é obrigatória a configuração do bundler Metro.
 
@@ -54,13 +54,14 @@ config.resolver.assetExts.push('wasm');
 module.exports = config;
 ```
 
+
 ### 2.2. Inicialização do Serviço de Dados
 
 Toda a lógica de persistência (CRUD) é centralizada na classe `DatabaseService`. O método `init()` deve ser chamado **uma única vez** no início da aplicação para criar as tabelas e inserir os dados iniciais (`statusHumor` e `configuracao` global).
 
 -----
 
-## 💾 3. Estrutura do Projeto e Modelo de Dados
+##  3. Estrutura do Projeto e a base de Dados
 
 ### 3.1. Arquivos de Lógica Essenciais
 
@@ -84,8 +85,7 @@ O modelo de banco de dados foi construído para suportar múltiplos humores e ta
 | **`configuracao`** | N/A | Global (1:1 conceitual) | Armazena configurações únicas do aplicativo (lembretes, tema). |
 
 -----
-
 ## 5\. Recursos de Aprendizagem
-
-  - [Expo documentation](https://docs.expo.dev/): Documentação oficial do Expo.
   - [Expo Router documentation](https://docs.expo.dev/router/introduction): Guia de roteamento baseado em arquivos.
+  - [Expo documentation](https://docs.expo.dev/): Documentação oficial do Expo.
+ 
