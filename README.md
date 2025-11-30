@@ -1,7 +1,7 @@
 
 -----
 
-# 📄 Guia Completo do Projeto MoodFlow
+#  *Guia Completo do Projeto MoodFlow*
 
 
 -----
