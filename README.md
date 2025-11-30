@@ -1,50 +1,92 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+-----
 
-## Get started
+# 📄 Guia Completo do Projeto MoodFlow
 
-1. Install dependencies
+Bem-vindo ao seu aplicativo **MoodFlow**\! Este guia detalha as etapas essenciais para configurar, iniciar e entender a estrutura de dados do projeto.
 
-   ```bash
-   npm install
-   ```
+-----
 
-2. Start the app
+## 🚀 1. Primeiros Passos
 
-   ```bash
-   npx expo start
-   ```
+Este é um projeto [Expo](https://expo.dev) que utiliza o [Expo Router](https://docs.expo.dev/router/introduction) para roteamento baseado em arquivos.
 
-In the output, you'll find options to open the app in a
+### 1.1. Instalar Dependências
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Instale todas as dependências do projeto, seguidas pelos pacotes específicos necessários para o **Banco de Dados (SQLite)** e componentes de UI (`SVG`, `LinearGradient`):
 
 ```bash
-npm run reset-project
+# 1. Instala todas as dependências listadas no package.json
+npm install
+
+# 2. Instala pacotes cruciais que o Expo não instala por padrão:
+npx expo install expo-sqlite react-native-svg expo-linear-gradient react-native-safe-area-context
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 1.2. Iniciar o Aplicativo
 
-## Learn more
+Sempre inicie o servidor limpando o cache para garantir que todas as configurações do Metro sejam carregadas corretamente:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start --clear
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Na saída do terminal, você encontrará opções para abrir o aplicativo em emuladores ou no **Web Browser** (pressionando `w`).
 
-## Join the community
+-----
 
-Join our community of developers creating universal apps.
+## 🛠️ 2. Configuração do Banco de Dados (SQLite Web)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+O projeto utiliza **SQLite** (via `expo-sqlite`) para persistência local de dados. Para que ele funcione no ambiente **Web** (navegador), é obrigatória a configuração do bundler Metro.
+
+### 2.1. Ajuste do `metro.config.js` (Crítico)
+
+Verifique o arquivo **`metro.config.js`** na raiz do projeto e garanta que ele contenha a regra para resolver a extensão `.wasm` (necessária para o SQLite no ambiente web):
+
+```javascript
+
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+
+config.resolver.assetExts.push('wasm');
+
+module.exports = config;
+```
+
+### 2.2. Inicialização do Serviço de Dados
+
+Toda a lógica de persistência (CRUD) é centralizada na classe `DatabaseService`. O método `init()` deve ser chamado **uma única vez** no início da aplicação para criar as tabelas e inserir os dados iniciais (`statusHumor` e `configuracao` global).
+
+-----
+
+## 💾 3. Estrutura do Projeto e Modelo de Dados
+
+### 3.1. Arquivos de Lógica Essenciais
+
+| Path | Descrição |
+| :--- | :--- |
+| **`app/index.js`** | O ponto de entrada (rota `/`) que carrega o componente `HomeScreen`. |
+| **`src/services/database.service.ts`** | Contém a classe `DatabaseService` com todas as operações **CRUD** (`createMoodEntry`, `getAllMoodEntries`, etc.). |
+| **`src/screens/`** | Pasta para outras telas do aplicativo. |
+
+### 3.2. Modelo de Dados (Relacionamentos N:N)
+
+O modelo de banco de dados foi construído para suportar múltiplos humores e tags por registro, utilizando as seguintes tabelas e relacionamentos:
+
+| Tabela | Chave Estrangeira (FK) | Relacionamento | Finalidade |
+| :--- | :--- | :--- | :--- |
+| **`registroHumor`** | N/A | 1:N (para as tabelas N:N) | Armazena o registro principal, texto e data/hora. |
+| **`statusHumor`** | N/A | 1:N (para `registroStatus`) | Armazena os tipos de humor disponíveis (ex: Feliz, Triste). |
+| **`tag`** | N/A | 1:N (para `registroTag`) | Armazena as tags ou categorias. |
+| **`registroStatus`** | `idRegistroHumor`, `idStatusHumor` | **N:N** (Tabela Associativa) | Permite que um registro tenha **MUITOS** humores. |
+| **`registroTag`** | `idRegistroHumor`, `idTag` | **N:N** (Tabela Associativa) | Permite que um registro tenha **MUITAS** tags. |
+| **`configuracao`** | N/A | Global (1:1 conceitual) | Armazena configurações únicas do aplicativo (lembretes, tema). |
+
+-----
+
+## 5\. Recursos de Aprendizagem
+
+  - [Expo documentation](https://docs.expo.dev/): Documentação oficial do Expo.
+  - [Expo Router documentation](https://docs.expo.dev/router/introduction): Guia de roteamento baseado em arquivos.
