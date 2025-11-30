@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Path } from "react-native-svg"
 import { SafeAreaView } from "react-native-safe-area-context"
+// import { useState } from 'react'; // Não é mais necessário, pois showCrudTest foi removido
+// import { CrudTestScreen } from './CrudTestScreen'; // Não é mais necessário
 
 function HeartIcon({ size = 24, color = "#A855F7" }: { size?: number; color?: string }) {
     return (
@@ -48,6 +50,13 @@ function MoreIcon({ size = 20, color = "#9333EA" }: { size?: number; color?: str
 }
 
 export function HomeScreen() {
+    // const [showCrudTest, setShowCrudTest] = useState(false); // REMOVIDO
+    
+    // REMOVIDO: Lógica condicional para renderizar CrudTestScreen
+    // if (showCrudTest) {
+    //     return <CrudTestScreen onBack={() => setShowCrudTest(false)} />;
+    // }
+
     const today = new Date().toLocaleDateString("pt-BR", {
         weekday: "long",
         year: "numeric",
@@ -87,6 +96,7 @@ export function HomeScreen() {
                 <View style={styles.bottomNav}>
                     {/* Floating action button */}
                     <View style={styles.fabContainer}>
+                        {/* Ação do FAB deve ser ligada à tela de criação de registro */}
                         <TouchableOpacity style={styles.fab}>
                             <LinearGradient colors={["#C084FC", "#F472B6"]} style={styles.fabGradient}>
                                 <PlusIcon size={24} color="#FFF" />
@@ -112,6 +122,16 @@ export function HomeScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* REMOVIDO: Botão de Teste CRUD */}
+                {/* <TouchableOpacity
+                    style={styles.devButton}
+                    onPress={() => setShowCrudTest(true)}
+                    activeOpacity={0.8}
+                >
+                    <Text style={styles.devButtonText}>🧪</Text>
+                </TouchableOpacity>
+                */}
             </SafeAreaView>
         </LinearGradient>
     )
@@ -240,4 +260,6 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: "500",
     },
+   
+    
 })
