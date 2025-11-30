@@ -3,7 +3,6 @@
 
 # 📄 Guia Completo do Projeto MoodFlow
 
-Bem-vindo ao seu aplicativo **MoodFlow**\! Este guia detalha as etapas essenciais para configurar, iniciar e entender a estrutura de dados do projeto.
 
 -----
 
