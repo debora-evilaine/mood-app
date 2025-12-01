@@ -47,6 +47,7 @@ interface DayData {
 
 export default function CalendarioScreen() {
     const router = useRouter();
+    const goHome = () => router.push("/");
     
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -299,6 +300,11 @@ export default function CalendarioScreen() {
                 />
 
                 <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                    {/* Botão voltar para home*/}
+                        <TouchableOpacity style={styles.backButton} onPress={goHome}>
+                            <Ionicons name="arrow-back" size={22} color="#7C3AED" />
+                            <Text style={styles.backText}>Voltar</Text>
+                        </TouchableOpacity>
                     {/* Cabeçalho do calendário */}
                     <View style={styles.calendarHeader}>
                         <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
@@ -499,6 +505,23 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+    },
+    backButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginLeft: 16,
+        marginTop: 8,
+        marginBottom: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    backText: {
+        marginLeft: 6,
+        color: "#7C3AED",
+        fontSize: 16,
+        fontWeight: "600",
     },
     calendarHeader: {
         flexDirection: 'row',
