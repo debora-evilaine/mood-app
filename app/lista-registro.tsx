@@ -1,16 +1,17 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Importação corrigida
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'; // Adicionado useFocusEffect
 import { Ionicons } from '@expo/vector-icons';
 import {
-  MoodEntry, MOCK_RECORDS, StatusHumor,
+  MoodEntry, StatusHumor,
   MOCK_STATUSES, RecordFilters
 } from '../src/models/Mood';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../src/context/ThemeContext'; // 1. Importar o hook
+import { useTheme } from '../src/context/ThemeContext';
+import { databaseService } from '../src/services/database.services'; // Importar o serviço
 
 const normalize = (s: string) =>
   s
@@ -29,9 +30,9 @@ const findStatusByName = (name: string): StatusHumor | undefined => {
   return MOCK_STATUSES.find(s => s.nome === name);
 };
 
-// Componente do Item da Lista (agora consome o tema)
+// Componente do Item da Lista
 const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
-  const { colors } = useTheme(); // 2. Usar o tema no item
+  const { colors } = useTheme();
   const primaryMoodName = record.humores[0];
   const primaryMood = findStatusByName(primaryMoodName);
 
@@ -39,8 +40,8 @@ const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
     <View style={[
       styles.card,
       {
-        backgroundColor: colors.card,       // Fundo dinâmico
-        borderColor: colors.cardBorder      // Borda dinâmica
+        backgroundColor: colors.card,
+        borderColor: colors.cardBorder
       }
     ]}>
       <View style={styles.header}>
@@ -52,7 +53,7 @@ const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
         <View style={styles.dateTime}>
           <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
           <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
-            {record.date}
+            {new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
       </View>
@@ -71,13 +72,11 @@ const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
               key={name + index}
               style={[
                 styles.tag,
-                // Tags usam a cor do humor ou uma cor de fundo genérica (tint) do tema
                 { backgroundColor: status?.cor || colors.tint }
               ]}
             >
               <Text style={[
                 styles.tagText,
-                // Se for tag genérica, usa texto secundário, se for humor, texto branco (geralmente)
                 { color: status?.cor ? '#FFF' : colors.textSecondary }
               ]}>
                 {name}
@@ -93,10 +92,41 @@ const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
 export default function ListaRegistroScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { colors } = useTheme(); // 3. Usar o tema na tela principal
+  const { colors } = useTheme();
 
   const [searchText, setSearchText] = useState('');
-  const [records] = useState<MoodEntry[]>(MOCK_RECORDS);
+  const [records, setRecords] = useState<MoodEntry[]>([]); // Inicializa vazio
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Carregar registros do banco
+  const loadRecords = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const entries = await databaseService.getAllMoodEntries();
+
+      // Mapear para garantir que o formato bata com a interface MoodEntry
+      const formattedEntries: MoodEntry[] = entries.map((e: any) => ({
+        id: e.id,
+        date: e.date,
+        notes: e.notes || e.texto || null,
+        humores: e.humores || [],
+        tags: e.tags || []
+      }));
+
+      setRecords(formattedEntries);
+    } catch (error) {
+      console.error("Erro ao carregar registros:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Recarregar sempre que a tela ganhar foco (útil ao voltar de um novo registro)
+  useFocusEffect(
+    useCallback(() => {
+      loadRecords();
+    }, [loadRecords])
+  );
 
   const currentFilters: RecordFilters = useMemo(() => {
     return {
@@ -163,7 +193,7 @@ export default function ListaRegistroScreen() {
 
   }, [records, searchText, currentFilters]);
 
-  const goBack = () => router.back();
+  const goHome = () => router.back();
 
   const openFilterModal = () => {
     const filtersForNavigation = {
@@ -176,10 +206,7 @@ export default function ListaRegistroScreen() {
   };
 
   return (
-    // 4. Gradiente dinâmico
     <LinearGradient colors={colors.background as any} style={styles.gradientContainer}>
-
-      {/* 5. SafeArea com padding para não cortar botões */}
       <SafeAreaView style={[styles.safeArea, { paddingTop: 10, paddingBottom: 10 }]}>
 
         <Stack.Screen
@@ -193,12 +220,11 @@ export default function ListaRegistroScreen() {
 
         <View style={styles.container}>
 
-          <TouchableOpacity style={styles.backButton} onPress={goBack}>
+          <TouchableOpacity style={styles.backButton} onPress={goHome}>
             <Ionicons name="arrow-back" size={22} color={colors.icon} />
             <Text style={[styles.backText, { color: colors.icon }]}>Voltar</Text>
           </TouchableOpacity>
 
-          {/* Barra de Pesquisa com cores do tema */}
           <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1 }]}>
             <Ionicons name="search" size={20} color={colors.textSecondary} />
 
@@ -218,19 +244,26 @@ export default function ListaRegistroScreen() {
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            data={filteredRecords}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => <RecordItem record={item} />}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                  Nenhum registro encontrado.
-                </Text>
-              </View>
-            )}
-          />
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.icon} />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Carregando registros...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredRecords}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => <RecordItem record={item} />}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    Nenhum registro encontrado.
+                  </Text>
+                </View>
+              )}
+            />
+          )}
 
         </View>
       </SafeAreaView>
@@ -238,7 +271,6 @@ export default function ListaRegistroScreen() {
   );
 }
 
-// Estilos estruturais (cores movidas para inline styles)
 const styles = StyleSheet.create({
   gradientContainer: { flex: 1 },
   safeArea: { flex: 1 },
@@ -282,6 +314,17 @@ const styles = StyleSheet.create({
 
   emptyContainer: { alignItems: "center", marginTop: 50 },
   emptyText: { fontSize: 18, fontWeight: "600" },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16
+  },
 
   card: {
     padding: 16,
