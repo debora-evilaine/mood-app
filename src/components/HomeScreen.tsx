@@ -103,7 +103,7 @@ export function HomeScreen() {
 
                     {/* Navigation buttons */}
                     <View style={styles.navBar}>
-                        <TouchableOpacity style={styles.navButton}>
+                        <TouchableOpacity style={styles.navButton} onPress={() => router.push("/calendario")}>
                             <CalendarIcon size={20} color="#2563EB" />
                             <Text style={[styles.navButtonText, { color: "#1D4ED8" }]}>Calendário</Text>
                         </TouchableOpacity>
