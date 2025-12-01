@@ -397,26 +397,6 @@ export default function CalendarioScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Botão de Mock (Opcional: pode remover ou estilizar também) */}
-            <TouchableOpacity
-              onPress={() => {
-                const { MOCK_RECORDS } = require('../src/models/Mood');
-                setMoodEntries(MOCK_RECORDS);
-                alert('Mostrando dados mock para teste visual');
-              }}
-              style={{
-                backgroundColor: '#FFD700',
-                padding: 10,
-                borderRadius: 8,
-                margin: 16,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#333', fontWeight: '600' }}>
-                🧪 Mostrar Dados Mock (Teste)
-              </Text>
-            </TouchableOpacity>
-
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Carregando...</Text>
