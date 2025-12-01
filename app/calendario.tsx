@@ -226,8 +226,7 @@ export default function CalendarioScreen() {
   }, []);
 
   const navigateToCreateEntry = () => {
-    const dateStr = selectedDate.toISOString();
-    // Passa a data selecionada como parâmetro
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
     router.push({ pathname: '/novo-registro', params: { date: dateStr } });
   };
 
