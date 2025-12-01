@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Path } from "react-native-svg"
 import { SafeAreaView } from "react-native-safe-area-context"
+import { useRouter } from "expo-router"
+
 
 
 function HeartIcon({ size = 24, color = "#A855F7" }: { size?: number; color?: string }) {
@@ -49,6 +51,7 @@ function MoreIcon({ size = 20, color = "#9333EA" }: { size?: number; color?: str
 }
 
 export function HomeScreen() {
+    const router = useRouter()
     
 
     const today = new Date().toLocaleDateString("pt-BR", {
@@ -105,10 +108,15 @@ export function HomeScreen() {
                             <Text style={[styles.navButtonText, { color: "#1D4ED8" }]}>Calendário</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.navButton}>
+                        <TouchableOpacity 
+                            style={styles.navButton}
+                            onPress={() => router.push("/lista-registro")}
+                            >
                             <ListIcon size={20} color="#16A34A" />
-                            <Text style={[styles.navButtonText, { color: "#15803D" }]}>Registros</Text>
-                        </TouchableOpacity>
+                            <Text style={[styles.navButtonText, { color: "#15803D" }]}>
+                            Registros
+                                </Text>
+                            </TouchableOpacity>
 
                         <TouchableOpacity style={styles.navButton}>
                             <MoreIcon size={20} color="#9333EA" />
