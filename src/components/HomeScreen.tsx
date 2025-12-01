@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import Svg, { Path } from "react-native-svg"
 import { SafeAreaView } from "react-native-safe-area-context"
 
+
 function HeartIcon({ size = 24, color = "#A855F7" }: { size?: number; color?: string }) {
     return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -48,6 +49,8 @@ function MoreIcon({ size = 20, color = "#9333EA" }: { size?: number; color?: str
 }
 
 export function HomeScreen() {
+    
+
     const today = new Date().toLocaleDateString("pt-BR", {
         weekday: "long",
         year: "numeric",
@@ -87,6 +90,7 @@ export function HomeScreen() {
                 <View style={styles.bottomNav}>
                     {/* Floating action button */}
                     <View style={styles.fabContainer}>
+                        {/* Ação do FAB deve ser ligada à tela de criação de registro */}
                         <TouchableOpacity style={styles.fab}>
                             <LinearGradient colors={["#C084FC", "#F472B6"]} style={styles.fabGradient}>
                                 <PlusIcon size={24} color="#FFF" />
@@ -112,6 +116,8 @@ export function HomeScreen() {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+               
             </SafeAreaView>
         </LinearGradient>
     )
@@ -240,4 +246,6 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: "500",
     },
+   
+    
 })
