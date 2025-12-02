@@ -36,22 +36,21 @@ const findStatusByName = (name: string): StatusHumor | undefined => {
   return MOCK_STATUSES.find(s => s.nome === name);
 };
 
-
-// 1. Definição das Props para Edição/Exclusão 
 interface RecordItemProps {
   record: MoodEntry;
   onPress: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-// 2. Modificação do Componente RecordItem para ser interativo e ter botão de exclusão
-// FIX: Removida a anotação React.FC<RecordItemProps> para resolver o erro de inferência de 'void'.
 const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
   const { colors } = useTheme();
   const primaryMoodName = record.humores[0];
   const primaryMood = findStatusByName(primaryMoodName);
 
-  // Lógica de Confirmação de Exclusão
+  // CORREÇÃO: Separa e remove duplicatas
+  const secondaryHumores = [...new Set(record.humores.slice(1))];
+  const tags = [...new Set(record.tags || [])];
+
   const handleDeleteConfirm = () => {
     Alert.alert(
       "Confirmar Exclusão",
@@ -64,7 +63,6 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
   };
 
   return (
-    // Usa TouchableOpacity para ser clicável (Ação de Edição)
     <TouchableOpacity onPress={() => onPress(record.id)} style={{ marginBottom: 12 }}>
       <View style={[
         styles.card,
@@ -82,7 +80,12 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
           <View style={styles.dateTime}>
             <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
             <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
-              {new Date(record.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              {new Date(record.date).toLocaleDateString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
             </Text>
           </View>
         </View>
@@ -91,14 +94,14 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
           {record.notes || "Sem descrição"}
         </Text>
 
+        {/* CORREÇÃO: Renderização separada com keys únicas */}
         <View style={styles.tagsContainer}>
-          {[...record.humores.slice(1), ...record.tags].map((name, index) => {
-            const isHumor = index < record.humores.length - 1;
-            const status = isHumor ? findStatusByName(name) : undefined;
-
+          {/* Humores secundários */}
+          {secondaryHumores.map((name, index) => {
+            const status = findStatusByName(name);
             return (
               <View
-                key={name + index}
+                key={`humor-${record.id}-${index}`}
                 style={[
                   styles.tag,
                   { backgroundColor: status?.cor || colors.tint }
@@ -106,27 +109,43 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
               >
                 <Text style={[
                   styles.tagText,
-                  { color: status?.cor ? '#FFF' : colors.textSecondary }
+                  { color: '#FFF' }
                 ]}>
                   {name}
                 </Text>
               </View>
             );
           })}
+          
+          {/* Tags */}
+          {tags.map((name, index) => (
+            <View
+              key={`tag-${record.id}-${index}`}
+              style={[
+                styles.tag,
+                { backgroundColor: colors.tint }
+              ]}
+            >
+              <Text style={[
+                styles.tagText,
+                { color: colors.textSecondary }
+              ]}>
+                {name}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {/* Botão de Exclusão (Novo) */}
+        {/* Botão de Exclusão */}
         <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteConfirm}>
-            <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
+          <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
 
       </View>
     </TouchableOpacity>
   );
-}; // Fim da modificação do RecordItem
+};
 
-
-// 3. Modificações em ListaRegistroScreen (Implementação das funções)
 export default function ListaRegistroScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -136,7 +155,7 @@ export default function ListaRegistroScreen() {
   const [records, setRecords] = useState<MoodEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar registros do banco (loadRecords permanece inalterada)
+  // CORREÇÃO: Remove duplicatas ao carregar
   const loadRecords = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -146,8 +165,8 @@ export default function ListaRegistroScreen() {
         id: e.id,
         date: e.date,
         notes: e.notes || e.texto || null,
-        humores: e.humores || [],
-        tags: e.tags || []
+        humores: [...new Set((e.humores || []) as string[])] as string[],
+        tags: [...new Set((e.tags || []) as string[])] as string[]
       }));
 
       setRecords(formattedEntries);
@@ -231,33 +250,26 @@ export default function ListaRegistroScreen() {
     router.push({ pathname: "/filtros", params: filtersForNavigation as any });
   };
   
-  // NOVA FUNÇÃO: Manipular Edição
   const handleEditRecord = (id: number) => {
-    // FIX: Alterado para usar o formato de objeto { pathname, params } para resolver o erro de tipagem do expo-router.
-    // O id é convertido para string pois parâmetros de rota são tipados como string.
     router.push({ 
-        pathname: "/registro/[id]", 
-        params: { id: id.toString() } 
+      pathname: "/registro/[id]", 
+      params: { id: id.toString() } 
     } as any);
   };
 
-  // NOVA FUNÇÃO: Manipular Exclusão
   const handleDeleteRecord = async (id: number) => {
     try {
-      // Chama o método implementado no database.services
       const success = await databaseService.deleteMoodEntry(id); 
       if (success) {
-        // Se a exclusão for bem-sucedida, recarrega a lista para atualizar a UI
         loadRecords(); 
       } else {
         console.warn(`Falha ao excluir o registro ${id}.`);
       }
     } catch (error) {
       console.error("Erro ao excluir registro:", error);
-      // Opcional: mostrar Alert de erro para o usuário
       Alert.alert("Erro de Exclusão", "Não foi possível excluir o registro. Tente novamente.");
     }
-  }; // Fim da modificação das funções de manipulação
+  };
 
   return (
     <LinearGradient colors={colors.background as any} style={styles.gradientContainer}>
@@ -279,7 +291,11 @@ export default function ListaRegistroScreen() {
             <Text style={[styles.backText, { color: colors.icon }]}>Voltar</Text>
           </TouchableOpacity>
 
-          <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1 }]}>
+          <View style={[styles.searchContainer, { 
+            backgroundColor: colors.card, 
+            borderColor: colors.cardBorder, 
+            borderWidth: 1 
+          }]}>
             <Ionicons name="search" size={20} color={colors.textSecondary} />
 
             <TextInput
@@ -301,18 +317,19 @@ export default function ListaRegistroScreen() {
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.icon} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Carregando registros...</Text>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                Carregando registros...
+              </Text>
             </View>
           ) : (
             <FlatList
               data={filteredRecords}
-              keyExtractor={item => item.id.toString()}
-              // 4. Repassando as funções para o RecordItem
+              keyExtractor={item => `record-${item.id}`}
               renderItem={({ item }) => (
                 <RecordItem 
                   record={item} 
-                  onPress={handleEditRecord} // Ação de toque para Edição
-                  onDelete={handleDeleteRecord} // Ação de botão para Exclusão
+                  onPress={handleEditRecord}
+                  onDelete={handleDeleteRecord}
                 />
               )}
               contentContainerStyle={styles.listContent}
@@ -332,8 +349,6 @@ export default function ListaRegistroScreen() {
   );
 }
 
-
-// 5. Adicionar o estilo deleteButton (Fim da modificação)
 const styles = StyleSheet.create({
   gradientContainer: { flex: 1 },
   safeArea: { flex: 1 },
@@ -391,25 +406,23 @@ const styles = StyleSheet.create({
 
   card: {
     padding: 16,
-    // Remover marginBottom daqui, pois foi movido para o TouchableOpacity
     borderRadius: 12,
     borderWidth: 2,
   },
   
-  // NOVO ESTILO: Posicionamento do botão de exclusão
   deleteButton: {
     position: 'absolute',
     top: 10,
     right: 10,
     padding: 5,
-    zIndex: 10, // FIX aplicado: Garante que o botão seja renderizado acima de outros elementos.
+    zIndex: 10,
   },
 
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
-    paddingRight: 30, // Adiciona padding para o ícone de exclusão não sobrepor o cabeçalho
+    paddingRight: 30,
   },
 
   moodBadge: {

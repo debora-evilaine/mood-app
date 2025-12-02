@@ -7,13 +7,13 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Importação correta
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { databaseService } from '../src/services/database.services';
 import { MoodEntry } from '../src/models/Mood';
-import { useTheme } from '../src/context/ThemeContext'; // 1. Hook do tema
+import { useTheme } from '../src/context/ThemeContext';
 import {
   format,
   addMonths,
@@ -48,7 +48,7 @@ interface DayData {
 export default function CalendarioScreen() {
   const router = useRouter();
   const goBack = () => router.back();
-  const { colors, theme } = useTheme(); // 2. Cores do tema
+  const { colors, theme } = useTheme();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -56,6 +56,7 @@ export default function CalendarioScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [availableMoods, setAvailableMoods] = useState<string[]>([]);
 
+  // CORREÇÃO: Remove duplicatas ao carregar
   const loadMoodEntries = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -64,8 +65,8 @@ export default function CalendarioScreen() {
         id: entry.id,
         date: entry.date || new Date().toISOString(),
         notes: entry.notes || entry.texto || null,
-        humores: entry.humores || entry.humoresNomes || [],
-        tags: entry.tags || entry.tagsNomes || []
+        humores: [...new Set((entry.humores || entry.humoresNomes || []) as string[])] as string[],
+        tags: [...new Set((entry.tags || entry.tagsNomes || []) as string[])] as string[]
       }));
       setMoodEntries(formattedEntries);
 
@@ -121,7 +122,6 @@ export default function CalendarioScreen() {
       'Energizado': '#EA580C',
       'Motivado': '#059669',
     };
-    // Fallback usa a cor do ícone do tema se não achar a cor do humor
     return mood ? (moodColors[mood] || colors.icon) : '#E5E7EB';
   }, [colors]);
 
@@ -268,7 +268,6 @@ export default function CalendarioScreen() {
   }, [currentDate, moodEntries, getPrimaryMood]);
 
   return (
-    // 3. Gradiente dinâmico
     <LinearGradient colors={colors.background as any} style={styles.container}>
       <SafeAreaView style={[styles.safeArea, { paddingTop: 10, paddingBottom: 10 }]}>
         <Stack.Screen
@@ -287,7 +286,6 @@ export default function CalendarioScreen() {
             <Text style={[styles.backText, { color: colors.icon }]}>Voltar</Text>
           </TouchableOpacity>
 
-          {/* Cabeçalho do calendário - Cores dinâmicas */}
           <View style={[
             styles.calendarHeader,
             { backgroundColor: colors.card, borderColor: colors.cardBorder }
@@ -313,7 +311,6 @@ export default function CalendarioScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Estatísticas do mês */}
           <View style={[
             styles.statsContainer,
             { backgroundColor: colors.card, borderColor: colors.cardBorder }
@@ -332,7 +329,6 @@ export default function CalendarioScreen() {
             </View>
           </View>
 
-          {/* Dias da semana */}
           <View style={styles.weekDaysContainer}>
             {weekDays.map((day, index) => (
               <View key={index} style={styles.weekDayCell}>
@@ -341,16 +337,15 @@ export default function CalendarioScreen() {
             ))}
           </View>
 
-          {/* Grid do calendário */}
           <View style={styles.calendarGrid}>
             {calendarDays.map((day, index) => (
               <TouchableOpacity
-                key={index}
+                key={`day-${format(day.date, 'yyyy-MM-dd')}-${index}`}
                 style={[
                   styles.dayCell,
                   !day.isCurrentMonth && styles.otherMonthDay,
-                  day.isToday && [styles.todayCell, { backgroundColor: colors.tint }], // Cor dinâmica para "Hoje"
-                  day.isSelected && [styles.selectedCell, { backgroundColor: colors.tint + '80' }], // Cor dinâmica para "Selecionado"
+                  day.isToday && [styles.todayCell, { backgroundColor: colors.tint }],
+                  day.isSelected && [styles.selectedCell, { backgroundColor: colors.tint + '80' }],
                 ]}
                 onPress={() => setSelectedDate(day.date)}
                 activeOpacity={0.7}
@@ -358,7 +353,7 @@ export default function CalendarioScreen() {
                 <View style={styles.dayContent}>
                   <Text style={[
                     styles.dayText,
-                    { color: colors.text }, // Cor padrão do texto
+                    { color: colors.text },
                     !day.isCurrentMonth && { color: colors.textSecondary, opacity: 0.5 },
                     day.isToday && [styles.todayDayText, { color: colors.icon }],
                     day.isSelected && [styles.selectedDayText, { color: colors.icon }],
@@ -366,7 +361,6 @@ export default function CalendarioScreen() {
                     {format(day.date, 'd')}
                   </Text>
 
-                  {/* Indicador de humor */}
                   {day.hasMood && (
                     <View style={[
                       styles.moodIndicator,
@@ -374,7 +368,6 @@ export default function CalendarioScreen() {
                     ]} />
                   )}
 
-                  {/* Indicador de seleção (anel) */}
                   {day.isSelected && (
                     <View style={[styles.selectionRing, { borderColor: colors.icon }]} />
                   )}
@@ -383,7 +376,6 @@ export default function CalendarioScreen() {
             ))}
           </View>
 
-          {/* Detalhes do dia selecionado */}
           <View style={[
             styles.detailsContainer,
             { backgroundColor: colors.card, borderColor: colors.cardBorder }
@@ -414,20 +406,21 @@ export default function CalendarioScreen() {
                   </Text>
                 </View>
 
+                {/* CORREÇÃO: Keys únicas para entries */}
                 {selectedDayEntries.map((entry, index) => (
                   <View
-                    key={`${entry.id || index}-${index}`}
+                    key={`entry-${entry.id}-${index}`}
                     style={[
                       styles.entryCard,
-                      // Card interno mais claro/escuro que o fundo
                       { backgroundColor: theme === 'dark' ? colors.background[1] : '#FFF', borderColor: colors.cardBorder }
                     ]}
                   >
                     <View style={styles.entryHeader}>
                       <View style={styles.entryMoods}>
+                        {/* CORREÇÃO: Keys únicas para humores */}
                         {entry.humores && entry.humores.map((mood, idx) => (
                           <View
-                            key={`${mood}-${idx}`}
+                            key={`entry-${entry.id}-mood-${idx}-${mood}`}
                             style={[
                               styles.moodChip,
                               { backgroundColor: getMoodColor(mood) }
@@ -448,10 +441,11 @@ export default function CalendarioScreen() {
                       </Text>
                     )}
 
+                    {/* CORREÇÃO: Keys únicas para tags */}
                     {entry.tags && entry.tags.length > 0 && (
                       <View style={styles.tagsContainer}>
                         {entry.tags.map((tag, idx) => (
-                          <View key={`${tag}-${idx}`} style={[styles.tag, { backgroundColor: colors.tint }]}>
+                          <View key={`entry-${entry.id}-tag-${idx}-${tag}`} style={[styles.tag, { backgroundColor: colors.tint }]}>
                             <Text style={[styles.tagText, { color: colors.icon }]}>#{tag}</Text>
                           </View>
                         ))}
@@ -480,15 +474,9 @@ export default function CalendarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+  scrollView: { flex: 1 },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -516,9 +504,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
   },
-  navButton: {
-    padding: 8,
-  },
+  navButton: { padding: 8 },
   monthContainer: {
     alignItems: 'center',
     flex: 1,
@@ -547,9 +533,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  statItem: {
-    alignItems: 'center',
-  },
+  statItem: { alignItems: 'center' },
   statNumber: {
     fontSize: 20,
     fontWeight: '700',
@@ -597,15 +581,9 @@ const styles = StyleSheet.create({
     padding: 4,
     margin: 1,
   },
-  otherMonthDay: {
-    opacity: 0.4,
-  },
-  todayCell: {
-    borderRadius: 8,
-  },
-  selectedCell: {
-    borderRadius: 8,
-  },
+  otherMonthDay: { opacity: 0.4 },
+  todayCell: { borderRadius: 8 },
+  selectedCell: { borderRadius: 8 },
   dayContent: {
     flex: 1,
     alignItems: 'center',
@@ -616,12 +594,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  todayDayText: {
-    fontWeight: '700',
-  },
-  selectedDayText: {
-    fontWeight: '700',
-  },
+  todayDayText: { fontWeight: '700' },
+  selectedDayText: { fontWeight: '700' },
   moodIndicator: {
     position: 'absolute',
     bottom: 2,
@@ -660,19 +634,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  addButton: {
-    padding: 4,
-  },
+  addButton: { padding: 4 },
   loadingContainer: {
     padding: 40,
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 16,
-  },
-  entriesContainer: {
-    gap: 12,
-  },
+  loadingText: { fontSize: 16 },
+  entriesContainer: { gap: 12 },
   summaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -742,9 +710,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  tagText: {
-    fontSize: 12,
-  },
+  tagText: { fontSize: 12 },
   emptyContainer: {
     alignItems: 'center',
     padding: 40,
