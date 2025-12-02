@@ -83,6 +83,18 @@ export class WebDatabaseService {
     return had;
   }
 
+  async deleteMoodEntry(id: number): Promise<boolean> {
+  if (!this.db) await this.init();
+  const initialLength = this.db!.entries.length;
+  this.db!.entries = this.db!.entries.filter((e) => e.id !== id);
+  
+  const deleted = initialLength !== this.db!.entries.length;
+  if (deleted) {
+    save(this.db!);
+  }
+  return deleted;
+}
+
   async getMoodEntryById(id: number) {
     if (!this.db) await this.init();
     return this.db!.entries.find((e) => e.id === id) ?? null;

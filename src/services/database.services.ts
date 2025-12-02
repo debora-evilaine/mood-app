@@ -56,6 +56,7 @@ export interface IDatabaseService {
   createTag?(nome: string, cor?: string): Promise<number>;
   getConfiguracaoGlobal?(): Promise<Configuracao | null>;
   updateConfiguracaoGlobal?(config: Partial<Configuracao>): Promise<boolean>;
+  deleteMoodEntry(id: number): Promise<boolean>;
 }
 
 
@@ -260,6 +261,16 @@ class DatabaseService {
     const result = await this.db.runAsync('DELETE FROM registroHumor');
     return result.changes > 0;
   }
+
+  async deleteMoodEntry(id: number): Promise<boolean> {
+  if (!this.db) throw new Error('Database not initialized');
+  const result = await this.db.runAsync(
+    'DELETE FROM registroHumor WHERE idRegistroHumor = ?', 
+    [id]
+  );
+  
+  return result.changes > 0;
+}
   
   
   async getConfiguracaoGlobal(): Promise<Configuracao | null> {
