@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   TextInput,
   ScrollView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,27 +17,23 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../src/context/ThemeContext';
 import { databaseService } from '../src/services/database.services';
-import { MOCK_STATUSES } from '../src/models/Mood';
+import { MOCK_STATUSES, getAllAvailableTags, Tag } from '../src/models/Mood';
 
 export default function NovoRegistroScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { colors } = useTheme();
 
-  // Correção na inicialização da data
   const [date, setDate] = useState(() => {
     const now = new Date();
 
     if (params.date) {
       try {
-        // Garante que é uma string (pode vir como array em alguns casos)
         const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
-
-        // Verifica se é formato YYYY-MM-DD (vindo do calendário)
         const parts = dateParam.split('-');
         if (parts.length === 3) {
           const year = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1; // Mês começa em 0
+          const month = parseInt(parts[1], 10) - 1;
           const day = parseInt(parts[2], 10);
 
           if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
@@ -48,7 +45,6 @@ export default function NovoRegistroScreen() {
           }
         }
 
-        // Fallback: tenta criar data direta (caso venha ISO string)
         const parsedDate = new Date(dateParam);
         if (!isNaN(parsedDate.getTime())) {
           return parsedDate;
@@ -58,7 +54,6 @@ export default function NovoRegistroScreen() {
       }
     }
 
-    // Se não tiver parâmetro ou der erro, usa a data/hora atual
     return now;
   });
 
@@ -66,8 +61,31 @@ export default function NovoRegistroScreen() {
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(false);
 
   const moodsList = MOCK_STATUSES;
+
+  
+  useEffect(() => {
+    const fetchTags = async () => {
+      setIsLoadingTags(true);
+      try {
+        const tags = await getAllAvailableTags();
+        setAvailableTags(tags);
+      } catch (error) {
+        console.error("Erro ao carregar tags:", error);
+        Alert.alert("Erro", "Não foi possível carregar as tags disponíveis.");
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    fetchTags();
+  }, []);
 
   const toggleMood = (moodName: string) => {
     setSelectedMoods(prev => {
@@ -77,6 +95,20 @@ export default function NovoRegistroScreen() {
         return [...prev, moodName];
       }
     });
+  };
+
+  const toggleTag = (tagName: string) => {
+    setSelectedTags(prev => {
+      if (prev.includes(tagName)) {
+        return prev.filter(t => t !== tagName);
+      } else {
+        return [...prev, tagName];
+      }
+    });
+  };
+
+  const handleTagRemove = (tagToRemove: string) => {
+    setSelectedTags(prev => prev.filter(t => t !== tagToRemove));
   };
 
   const onTimeChange = (event: any, selectedTime?: Date) => {
@@ -101,7 +133,7 @@ export default function NovoRegistroScreen() {
         date: date.toISOString(),
         humores: selectedMoods,
         notes: note,
-        tags: [],
+        tags: selectedTags,
         intensity: 3
       });
 
@@ -137,8 +169,11 @@ export default function NovoRegistroScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Data e Hora */}
           <View style={styles.dateTimeRow}>
             <View style={[styles.dateBadge, { backgroundColor: colors.card }]}>
               <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
@@ -156,6 +191,7 @@ export default function NovoRegistroScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Humores */}
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Como você está se sentindo?
           </Text>
@@ -188,6 +224,7 @@ export default function NovoRegistroScreen() {
             })}
           </View>
 
+          {/* Notas */}
           <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>
             Notas (opcional)
           </Text>
@@ -210,11 +247,62 @@ export default function NovoRegistroScreen() {
             onChangeText={setNote}
           />
 
+          {/* Tags */}
+          <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>
+            Tags (opcional)
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.tagSelector,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.cardBorder
+              }
+            ]}
+            onPress={() => setShowTagModal(true)}
+          >
+            <Text style={[
+              styles.tagSelectorText,
+              { color: selectedTags.length > 0 ? colors.text : colors.textSecondary }
+            ]}>
+              {selectedTags.length > 0 
+                ? `${selectedTags.length} tag(s) selecionada(s)` 
+                : 'Selecionar tags'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {selectedTags.length > 0 && (
+            <View style={styles.tagsDisplayArea}>
+              {selectedTags.map((tagName, index) => {
+                const tag = availableTags.find(t => t.nome === tagName);
+                return (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[styles.tagPill, { backgroundColor: tag?.cor || colors.icon }]}
+                    onPress={() => handleTagRemove(tagName)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.tagText}>{tagName}</Text>
+                    <Ionicons name="close" size={16} color="#FFF" style={{ marginLeft: 4 }} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
 
+        {/* Botão Salvar */}
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: colors.icon, opacity: isSaving ? 0.7 : 1 }]}
+            style={[
+              styles.saveButton, 
+              { 
+                backgroundColor: colors.icon, 
+                opacity: isSaving ? 0.7 : 1 
+              }
+            ]}
             onPress={handleSave}
             disabled={isSaving}
           >
@@ -226,6 +314,72 @@ export default function NovoRegistroScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Modal de Seleção de Tags */}
+        <Modal
+          visible={showTagModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowTagModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Selecionar Tags
+                </Text>
+                <TouchableOpacity onPress={() => setShowTagModal(false)}>
+                  <Ionicons name="close" size={28} color={colors.icon} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView contentContainerStyle={styles.modalScrollContent}>
+                {isLoadingTags ? (
+                  <ActivityIndicator size="large" color={colors.icon} style={{ marginTop: 20 }} />
+                ) : availableTags.length === 0 ? (
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    Nenhuma tag disponível
+                  </Text>
+                ) : (
+                  <View style={styles.tagsGrid}>
+                    {availableTags.map((tag) => {
+                      const isSelected = selectedTags.includes(tag.nome);
+                      return (
+                        <TouchableOpacity
+                          key={tag.id}
+                          style={[
+                            styles.tagOption,
+                            {
+                              backgroundColor: isSelected ? tag.cor : 'transparent',
+                              borderColor: isSelected ? tag.cor : colors.cardBorder,
+                              borderWidth: 1
+                            }
+                          ]}
+                          onPress={() => toggleTag(tag.nome)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.tagOptionText,
+                            { color: isSelected ? '#FFF' : colors.text }
+                          ]}>
+                            {tag.nome}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </ScrollView>
+
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.icon }]}
+                onPress={() => setShowTagModal(false)}
+              >
+                <Text style={styles.modalButtonText}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {showTimePicker && (
           <DateTimePicker
             value={date}
@@ -235,7 +389,6 @@ export default function NovoRegistroScreen() {
             onChange={onTimeChange}
           />
         )}
-
       </SafeAreaView>
     </LinearGradient>
   );
@@ -335,7 +488,102 @@ const styles = StyleSheet.create({
     minHeight: 120,
     fontSize: 16,
   },
+  
+  tagSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 48,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  tagSelectorText: {
+    fontSize: 16,
+  },
+  tagsDisplayArea: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  tagText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  modalScrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 40,
+  },
+  tagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tagOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  tagOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalButton: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  // Footer
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 20,
     backgroundColor: 'transparent',
   },
