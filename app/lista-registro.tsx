@@ -13,6 +13,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../src/context/ThemeContext';
 import { databaseService } from '../src/services/database.services'; // Importar o serviço
 
+const parseListParam = (param: string | string[] | undefined): string[] => {
+  if (!param) return [];
+  if (Array.isArray(param)) return param;
+  return param.split(',').map(s => s.trim()).filter(Boolean);
+};
+
 const normalize = (s: string) =>
   s
     ?.normalize("NFD")
@@ -130,17 +136,9 @@ export default function ListaRegistroScreen() {
 
   const currentFilters: RecordFilters = useMemo(() => {
     return {
-      humoresNames: params.humoresNames
-        ? Array.isArray(params.humoresNames)
-          ? params.humoresNames
-          : [params.humoresNames]
-        : undefined,
-
-      tagNames: params.tagNames
-        ? Array.isArray(params.tagNames)
-          ? params.tagNames
-          : [params.tagNames]
-        : undefined,
+      // Agora usamos a função robusta que entende "Feliz,Triste" como ['Feliz', 'Triste']
+      humoresNames: parseListParam(params.humoresNames),
+      tagNames: parseListParam(params.tagNames),
 
       startDate: safeDate(params.startDate),
       endDate: safeDate(params.endDate),
