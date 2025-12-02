@@ -19,15 +19,13 @@ import {
   Tag,
 } from "../src/models/Mood";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../src/context/ThemeContext"; // 1. Importar ThemeContext
+import { useTheme } from "../src/context/ThemeContext";
 
 type DatePickerField = "startDate" | "endDate" | null;
 
-// Função auxiliar robusta para processar arrays vindos da URL
 const parseListParam = (param: string | string[] | undefined): string[] => {
   if (!param) return [];
   if (Array.isArray(param)) return param;
-  // Se for string "A,B", vira ['A', 'B']
   return param.split(',').map(s => s.trim()).filter(Boolean);
 };
 
@@ -36,7 +34,7 @@ interface SelectionChipProps {
   color: string;
   isSelected: boolean;
   onToggle: (name: string) => void;
-  textColor: string; // Adicionado para suportar tema
+  textColor: string;
 }
 
 const SelectionChip: React.FC<SelectionChipProps> = React.memo(
@@ -47,7 +45,7 @@ const SelectionChip: React.FC<SelectionChipProps> = React.memo(
           styles.chip,
           {
             backgroundColor: isSelected ? color : 'transparent',
-            borderColor: isSelected ? color : textColor + '40', // Borda sutil se não selecionado
+            borderColor: isSelected ? color : textColor + '40',
             borderWidth: 1
           },
         ]}
@@ -69,15 +67,13 @@ const SelectionChip: React.FC<SelectionChipProps> = React.memo(
 export default function FiltrosScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { colors, theme } = useTheme(); // 2. Usar cores do tema
+  const { colors, theme } = useTheme();
 
-  // Lógica de inicialização corrigida
   const initialFilters: RecordFilters = useMemo(() => {
     const safeDate = (v: any): Date | undefined =>
       (v && typeof v === "string") ? new Date(v) : undefined;
 
     return {
-      // Usa a nova função de parse para garantir que sempre temos um array correto
       humoresNames: parseListParam(params.humoresNames),
       tagNames: parseListParam(params.tagNames),
       startDate: safeDate(params.startDate),
@@ -158,7 +154,6 @@ export default function FiltrosScreen() {
 
   const handleApplyFilters = useCallback(() => {
     const filtersToSend = {
-      // Envia como string separada por vírgula ou array (Expo Router lida, mas string é mais segura para garantir)
       humoresNames: selectedHumores.join(','),
       tagNames: selectedTags.join(','),
       startDate: startDate?.toISOString(),

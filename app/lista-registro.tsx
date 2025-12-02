@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'; // Adicionado useFocusEffect
+import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
   MoodEntry, StatusHumor,
@@ -11,8 +11,11 @@ import {
 } from '../src/models/Mood';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../src/context/ThemeContext';
-import { databaseService } from '../src/services/database.services'; // Importar o serviço
+import { databaseService } from '../src/services/database.services';
 
+// ... (funções auxiliares normalize, safeDate, parseListParam, findStatusByName e componente RecordItem permanecem iguais) ...
+
+// ADICIONE ESSA FUNÇÃO NO TOPO DO ARQUIVO (fora do componente)
 const parseListParam = (param: string | string[] | undefined): string[] => {
   if (!param) return [];
   if (Array.isArray(param)) return param;
@@ -36,7 +39,6 @@ const findStatusByName = (name: string): StatusHumor | undefined => {
   return MOCK_STATUSES.find(s => s.nome === name);
 };
 
-// Componente do Item da Lista
 const RecordItem: React.FC<{ record: MoodEntry }> = ({ record }) => {
   const { colors } = useTheme();
   const primaryMoodName = record.humores[0];
@@ -101,7 +103,7 @@ export default function ListaRegistroScreen() {
   const { colors } = useTheme();
 
   const [searchText, setSearchText] = useState('');
-  const [records, setRecords] = useState<MoodEntry[]>([]); // Inicializa vazio
+  const [records, setRecords] = useState<MoodEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Carregar registros do banco
@@ -110,7 +112,6 @@ export default function ListaRegistroScreen() {
       setIsLoading(true);
       const entries = await databaseService.getAllMoodEntries();
 
-      // Mapear para garantir que o formato bata com a interface MoodEntry
       const formattedEntries: MoodEntry[] = entries.map((e: any) => ({
         id: e.id,
         date: e.date,
@@ -127,7 +128,6 @@ export default function ListaRegistroScreen() {
     }
   }, []);
 
-  // Recarregar sempre que a tela ganhar foco (útil ao voltar de um novo registro)
   useFocusEffect(
     useCallback(() => {
       loadRecords();
@@ -136,10 +136,8 @@ export default function ListaRegistroScreen() {
 
   const currentFilters: RecordFilters = useMemo(() => {
     return {
-      // Agora usamos a função robusta que entende "Feliz,Triste" como ['Feliz', 'Triste']
       humoresNames: parseListParam(params.humoresNames),
       tagNames: parseListParam(params.tagNames),
-
       startDate: safeDate(params.startDate),
       endDate: safeDate(params.endDate),
     };
@@ -191,7 +189,7 @@ export default function ListaRegistroScreen() {
 
   }, [records, searchText, currentFilters]);
 
-  const goHome = () => router.back();
+  const goHome = () => router.dismissAll();
 
   const openFilterModal = () => {
     const filtersForNavigation = {
