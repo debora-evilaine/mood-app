@@ -78,11 +78,9 @@ export function HomeScreen() {
             <Text style={[styles.greetingTitle, { color: colors.text }]}>
               Como você está se sentindo?
             </Text>
-            <Text style={[styles.greetingSubtitle, { color: colors.textSecondary }]}>
-              Registre seu humor e acompanhe suas emoções ao longo do tempo
-            </Text>
           </View>
 
+          {/* Dashboard placeholder */}
           {/* Dashboard placeholder */}
           <View style={styles.dashboardContainer}>
             {/* Cartão com fundo e borda dinâmicos */}
@@ -93,12 +91,15 @@ export function HomeScreen() {
                 borderColor: colors.cardBorder
               }
             ]}>
-              <Text style={styles.dashboardIcon}>📊</Text>
+              <Text style={styles.dashboardIcon}>🌈</Text>
               <Text style={[styles.dashboardText, { color: colors.textSecondary }]}>
-                Dashboard de Emoções
+                Bem-vindo ao MoodFlow!
+                Aqui você pode registrar seus sentimentos, refletir sobre suas emoções
+                e acompanhar sua jornada de bem-estar ao longo do tempo.
               </Text>
             </View>
           </View>
+
         </ScrollView>
 
         {/* Bottom navigation */}
