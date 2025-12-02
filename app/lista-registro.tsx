@@ -38,17 +38,14 @@ const findStatusByName = (name: string): StatusHumor | undefined => {
 
 interface RecordItemProps {
   record: MoodEntry;
-  onPress: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
+const RecordItem = ({ record, onDelete }: RecordItemProps) => {
   const { colors } = useTheme();
-  const primaryMoodName = record.humores[0];
-  const primaryMood = findStatusByName(primaryMoodName);
 
-  // CORREÇÃO: Separa e remove duplicatas
-  const secondaryHumores = [...new Set(record.humores.slice(1))];
+  // Remove duplicatas de humores e tags
+  const humores = [...new Set(record.humores)];
   const tags = [...new Set(record.tags || [])];
 
   const handleDeleteConfirm = () => {
@@ -63,7 +60,7 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
   };
 
   return (
-    <TouchableOpacity onPress={() => onPress(record.id)} style={{ marginBottom: 12 }}>
+    <View style={{ marginBottom: 12 }}>
       <View style={[
         styles.card,
         {
@@ -71,12 +68,8 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
           borderColor: colors.cardBorder
         }
       ]}>
-        <View style={styles.header}>
-          <View style={[styles.moodBadge, { backgroundColor: primaryMood?.cor || colors.icon }]}>
-            <Text style={styles.moodIcon}>{primaryMood?.icone || '❓'}</Text>
-            <Text style={styles.moodText}>{primaryMoodName}</Text>
-          </View>
-
+        {/* Cabeçalho com data/hora */}
+        <View style={styles.headerTop}>
           <View style={styles.dateTime}>
             <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
             <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
@@ -90,51 +83,48 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
           </View>
         </View>
 
+        {/* TODOS os humores como badges coloridos */}
+        <View style={styles.humoresContainer}>
+          {humores.map((name, index) => {
+            const mood = findStatusByName(name);
+            return (
+              <View 
+                key={`humor-${record.id}-${index}`}
+                style={[styles.moodBadge, { backgroundColor: mood?.cor || colors.icon }]}
+              >
+                <Text style={styles.moodIcon}>{mood?.icone || '❓'}</Text>
+                <Text style={styles.moodText}>{name}</Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Texto/Notas */}
         <Text style={[styles.notesText, { color: colors.text }]}>
           {record.notes || "Sem descrição"}
         </Text>
 
-        {/* CORREÇÃO: Renderização separada com keys únicas */}
-        <View style={styles.tagsContainer}>
-          {/* Humores secundários */}
-          {secondaryHumores.map((name, index) => {
-            const status = findStatusByName(name);
-            return (
+        {/* Tags separadas */}
+        {tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {tags.map((name, index) => (
               <View
-                key={`humor-${record.id}-${index}`}
+                key={`tag-${record.id}-${index}`}
                 style={[
                   styles.tag,
-                  { backgroundColor: status?.cor || colors.tint }
+                  { backgroundColor: colors.tint }
                 ]}
               >
                 <Text style={[
                   styles.tagText,
-                  { color: '#FFF' }
+                  { color: colors.textSecondary }
                 ]}>
                   {name}
                 </Text>
               </View>
-            );
-          })}
-          
-          {/* Tags */}
-          {tags.map((name, index) => (
-            <View
-              key={`tag-${record.id}-${index}`}
-              style={[
-                styles.tag,
-                { backgroundColor: colors.tint }
-              ]}
-            >
-              <Text style={[
-                styles.tagText,
-                { color: colors.textSecondary }
-              ]}>
-                {name}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Botão de Exclusão */}
         <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteConfirm}>
@@ -142,7 +132,7 @@ const RecordItem = ({ record, onPress, onDelete }: RecordItemProps) => {
         </TouchableOpacity>
 
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -155,7 +145,7 @@ export default function ListaRegistroScreen() {
   const [records, setRecords] = useState<MoodEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // CORREÇÃO: Remove duplicatas ao carregar
+  // Remove duplicatas ao carregar
   const loadRecords = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -249,13 +239,6 @@ export default function ListaRegistroScreen() {
     };
     router.push({ pathname: "/filtros", params: filtersForNavigation as any });
   };
-  
-  const handleEditRecord = (id: number) => {
-    router.push({ 
-      pathname: "/registro/[id]", 
-      params: { id: id.toString() } 
-    } as any);
-  };
 
   const handleDeleteRecord = async (id: number) => {
     try {
@@ -327,8 +310,7 @@ export default function ListaRegistroScreen() {
               keyExtractor={item => `record-${item.id}`}
               renderItem={({ item }) => (
                 <RecordItem 
-                  record={item} 
-                  onPress={handleEditRecord}
+                  record={item}
                   onDelete={handleDeleteRecord}
                 />
               )}
@@ -418,11 +400,28 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  header: {
+  headerTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     marginBottom: 8,
     paddingRight: 30,
+  },
+
+  dateTime: { 
+    flexDirection: "row", 
+    alignItems: "center" 
+  },
+  
+  dateTimeText: { 
+    fontSize: 12, 
+    marginLeft: 4 
+  },
+
+  humoresContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
   },
 
   moodBadge: {
@@ -433,11 +432,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 
-  moodIcon: { fontSize: 18, marginRight: 6 },
-  moodText: { color: "#FFF", fontWeight: "600" },
-
-  dateTime: { flexDirection: "row", alignItems: "center" },
-  dateTimeText: { fontSize: 12, marginLeft: 4 },
+  moodIcon: { 
+    fontSize: 18, 
+    marginRight: 6 
+  },
+  
+  moodText: { 
+    color: "#FFF", 
+    fontWeight: "600" 
+  },
 
   notesText: {
     fontSize: 14,
