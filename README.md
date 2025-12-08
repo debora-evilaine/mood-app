@@ -1,3 +1,11 @@
+# Desenvolvedores
+
+- Carlos Eduardo (carlosems)
+- Débora Eviliane (debora-eviliane)
+- Leandro Fernandes (LeandroFernandes105)
+- Pedro Faustino (sayplys)
+- Thawany Lima (thawanylima)
+- Vitória Novaes (veetwt)
 
 -----
 
